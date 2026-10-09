@@ -111,7 +111,9 @@ scikit-learn==1.9.1
 scipy==1.18.1
 seaborn==0.13.2
 Send2Trash==2.1.0
+shap==0.53.0
 six==1.17.0
+slicer==0.0.8
 soupsieve==2.10
 stack-data==0.6.3
 terminado==0.18.1

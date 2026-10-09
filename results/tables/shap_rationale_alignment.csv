@@ -1,0 +1,54 @@
+row,label,human_word_count,overlap_count,coverage,overlapping_words
+18,Hate speech,2,2,1.0,"['muzzie', 'shithole']"
+20,Offensive,8,6,0.75,"['hard', 'lesbian', 'nsfw', 'she', 'single', 'soft']"
+21,Hate speech,5,3,0.6,"['cuck', 'fuck', 'gay']"
+25,Offensive,6,6,1.0,"['corrupt', 'elites', 'genocide', 'jews', 'politicians', 'white']"
+26,Hate speech,25,9,0.36,"['aids', 'by', 'dies', 'fucked', 'hope', 'needs', 'niggers', 'pack', 'raped']"
+29,Offensive,4,3,0.75,"['bitch', 'these', 'white']"
+30,Offensive,1,1,1.0,['retard']
+31,Offensive,3,2,0.6666666666666666,"['ass', 'bitch']"
+32,Offensive,2,2,1.0,"['bitches', 'niggahs']"
+33,Offensive,1,1,1.0,['retarded']
+34,Hate speech,1,1,1.0,['nigger']
+36,Offensive,2,2,1.0,"['bitch', 'gay']"
+38,Offensive,1,1,1.0,['mudshark']
+40,Hate speech,12,7,0.5833333333333334,"['are', 'dumbass', 'fuckers', 'get', 'gonna', 'killed', 'these']"
+41,Hate speech,6,3,0.5,"['people', 'stupid', 'women']"
+44,Offensive,1,1,1.0,['hillbilly']
+47,Offensive,7,3,0.42857142857142855,"['bitch', 'marxist', 'white']"
+48,Hate speech,3,2,0.6666666666666666,"['chicago', 'nigger']"
+49,Hate speech,1,1,1.0,['nigger']
+50,Offensive,3,3,1.0,"['by', 'light', 'raped']"
+51,Hate speech,1,0,0.0,[]
+52,Hate speech,9,2,0.2222222222222222,"['monkey', 'savage']"
+54,Offensive,20,7,0.35,"['anyway', 'are', 'decent', 'nazi', 'straight', 'white', 'you']"
+55,Offensive,6,5,0.8333333333333334,"['bitch', 'cracker', 'fat', 'stupid', 'white']"
+58,Offensive,3,1,0.3333333333333333,['muslim']
+60,Offensive,1,1,1.0,['slut']
+61,Hate speech,4,2,0.5,"['bitch', 'wetback']"
+62,Hate speech,15,8,0.5333333333333333,"['american', 'bitches', 'fucking', 'homosexual', 'nigger', 'rat', 'really', 'these']"
+63,Offensive,1,1,1.0,['faggots']
+64,Hate speech,1,1,1.0,['faggots']
+65,Offensive,1,1,1.0,['bitch']
+66,Offensive,2,2,1.0,"['jew', 'sandnigger']"
+67,Offensive,2,2,1.0,"['fucking', 'pussy']"
+68,Offensive,3,2,0.6666666666666666,"['hoes', 'thots']"
+69,Hate speech,42,9,0.21428571428571427,"['by', 'class', 'death', 'idiots', 'immigration', 'raped', 'spic', 'the', 'will']"
+71,Offensive,24,8,0.3333333333333333,"['arabia', 'bunch', 'compromise', 'cucks', 'find', 'move', 'retarded', 'saudi']"
+72,Offensive,2,1,0.5,['bitch']
+73,Hate speech,1,1,1.0,['muzzrats']
+76,Hate speech,1,1,1.0,['nigger']
+77,Offensive,1,1,1.0,['niglet']
+78,Offensive,6,5,0.8333333333333334,"['broke', 'ghetto', 'girlfriends', 'no', 'to']"
+79,Hate speech,3,3,1.0,"['fag', 'sandnigger', 'sharia']"
+80,Hate speech,7,7,1.0,"['are', 'cares', 'niggers', 'only', 'soulless', 'they', 'who']"
+81,Offensive,1,1,1.0,['redneck']
+85,Hate speech,2,2,1.0,"['nigger', 'sand']"
+86,Hate speech,2,2,1.0,"['muzzie', 'terrorist']"
+88,Offensive,5,1,0.2,['illegal']
+89,Offensive,1,1,1.0,['nigger']
+91,Hate speech,1,1,1.0,['muzzies']
+93,Offensive,3,2,0.6666666666666666,"['jews', 'owned']"
+94,Hate speech,3,3,1.0,"['nigger', 'raping', 'whore']"
+98,Offensive,16,5,0.3125,"['asians', 'east', 'no', 'the', 'them']"
+99,Hate speech,19,7,0.3684210526315789,"['america', 'hopefully', 'niggers', 'retarded', 'this', 'white', 'will']"

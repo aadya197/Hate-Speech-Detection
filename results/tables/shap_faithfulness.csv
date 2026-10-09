@@ -1,0 +1,2 @@
+row,predicted_class,original_confidence,confidence_after_removal,confidence_using_only_selected_words,comprehensiveness,sufficiency_gap,selected_words
+18,0,0.5412619043154414,0.47894723924511773,0.39190795426817815,0.06231466507032368,0.14935395004726326,"muzzie, bitch, shithole, democrats, fuck"
