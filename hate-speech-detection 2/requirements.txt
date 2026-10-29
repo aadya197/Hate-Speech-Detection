@@ -1,0 +1,26 @@
+# Use Python 3.12 (PyTorch support for 3.14 is not reliable yet).
+# Full pinned environment from the original Mac setup: requirements-lock.txt
+
+# Data + classical ML
+numpy
+pandas
+scikit-learn
+joblib
+matplotlib
+seaborn
+
+# Explainability
+shap
+
+# Deep learning (XLM-RoBERTa)
+torch
+transformers>=4.45
+datasets
+accelerate>=1.0
+
+# Notebooks
+jupyter
+ipykernel
+
+# Demo (planned)
+streamlit
