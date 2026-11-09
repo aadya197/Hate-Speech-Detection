@@ -8,7 +8,7 @@ import argparse
 import pandas as pd
 
 from src.config import FIGURES_DIR, MODELS_DIR, TABLES_DIR, ensure_dirs
-from src.metrics import per_class_table, save_confusion_matrix
+from src.metrics import per_class_table, save_confusion_matrix, save_predictions
 from src.xlmr import (
     build_tokenized_datasets,
     load_model,
@@ -38,6 +38,7 @@ def main() -> None:
     labels, preds = pred.label_ids, pred.predictions.argmax(-1)
     table = per_class_table(labels, preds)
     table.to_csv(TABLES_DIR / f"{args.tag}_per_class_{args.split}.csv", index=False)
+    save_predictions(args.split, pred.predictions, TABLES_DIR / f"{args.tag}_{args.split}_predictions.csv")
     save_confusion_matrix(
         labels, preds, f"XLM-RoBERTa: {args.split.title()} Confusion Matrix",
         FIGURES_DIR / f"{args.tag}_confusion_matrix_{args.split}.png",

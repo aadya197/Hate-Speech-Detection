@@ -27,7 +27,7 @@ from src.config import (
 )
 from transformers import TrainerCallback
 
-from src.metrics import per_class_table, save_confusion_matrix
+from src.metrics import per_class_table, save_confusion_matrix, save_predictions
 from src.xlmr import (
     build_tokenized_datasets,
     get_device,
@@ -113,6 +113,10 @@ def main() -> None:
         pred = trainer.predict(data[split])
         labels, preds = pred.label_ids, pred.predictions.argmax(-1)
         m = pred.metrics
+        save_predictions(
+            split, pred.predictions, TABLES_DIR / f"{args.tag}_{split}_predictions.csv",
+            limit=64 if args.smoke else None,
+        )
         rows.append(
             {
                 "split": split,
