@@ -1,11 +1,14 @@
-"""Fine-tune XLM-RoBERTa on HateXplain from the Terminal (survives notebook kernel restarts).
+"""Fine-tune a transformer (XLM-RoBERTa by default, or BERT etc.) on HateXplain.
 
 Quick check that everything works (a couple of minutes):
     python -m src.train_xlmr --smoke
 
-Full run (keep the Mac awake and log to a file):
+On a GPU (Colab / Kaggle), about 30-45 minutes for 4 epochs:
+    python -m src.train_xlmr --model_name bert-base-uncased --tag bert \
+        --epochs 4 --train_bs 16 --grad_accum 1 --fp16
+
+On the Mac (slow, and long runs can silently stall on MPS; prefer a GPU):
     caffeinate -i nohup python -m src.train_xlmr > results/logs/xlmr_train.log 2>&1 &
-    tail -f results/logs/xlmr_train.log
 
 If it gets interrupted, continue from the last checkpoint:
     python -m src.train_xlmr --resume
@@ -22,6 +25,8 @@ from src.config import (
     XLMR_MODEL_NAME,
     ensure_dirs,
 )
+from transformers import TrainerCallback
+
 from src.metrics import per_class_table, save_confusion_matrix
 from src.xlmr import (
     build_tokenized_datasets,
@@ -33,6 +38,23 @@ from src.xlmr import (
 )
 
 
+class StallWatch(TrainerCallback):
+    """Warn loudly if two evaluations give exactly the same metrics: the model is not learning
+    (this happened on the Mac's MPS backend: epoch 1 and 2 were identical)."""
+
+    def __init__(self):
+        self.last = None
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        cur = {k: round(v, 6) for k, v in (metrics or {}).items() if k in ("eval_loss", "eval_macro_f1")}
+        if self.last is not None and cur == self.last:
+            print("\n" + "!" * 70)
+            print("WARNING: evaluation metrics are IDENTICAL to the previous epoch.")
+            print("The model is probably not learning. Stop and check the setup.")
+            print("!" * 70 + "\n")
+        self.last = cur
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", default=XLMR_MODEL_NAME)
@@ -40,6 +62,7 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--train_bs", type=int, default=4)
     parser.add_argument("--grad_accum", type=int, default=4)
+    parser.add_argument("--fp16", action="store_true", help="mixed precision (CUDA GPUs only)")
     parser.add_argument("--resume", action="store_true", help="resume from last checkpoint")
     parser.add_argument("--smoke", action="store_true", help="tiny run to check the pipeline")
     parser.add_argument("--tag", default="xlmr", help="prefix for output files")
@@ -66,8 +89,10 @@ def main() -> None:
         per_device_train_batch_size=args.train_bs,
         gradient_accumulation_steps=args.grad_accum,
         logging_steps=1 if args.smoke else 100,
+        fp16=args.fp16,
     )
     trainer = make_trainer(model, training_args, tokenizer, data["train"], data["validation"])
+    trainer.add_callback(StallWatch())
 
     train_result = trainer.train(resume_from_checkpoint=True if args.resume else None)
     print("\nTraining completed!")
@@ -102,7 +127,7 @@ def main() -> None:
             table = per_class_table(labels, preds)
             table.to_csv(TABLES_DIR / f"{args.tag}_per_class_test.csv", index=False)
             save_confusion_matrix(
-                labels, preds, "XLM-RoBERTa: Test Confusion Matrix",
+                labels, preds, f"{args.model_name.split('/')[-1]}: Test Confusion Matrix",
                 FIGURES_DIR / f"{args.tag}_confusion_matrix_test.png",
             )
             print(table.to_string(index=False))
