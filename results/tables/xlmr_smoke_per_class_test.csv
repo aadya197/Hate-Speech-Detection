@@ -1,4 +1,0 @@
-Class,Precision,Recall,F1-score,Support
-Hate speech,0.375,0.875,0.525,24
-Normal,0.0,0.0,0.0,26
-Offensive,0.25,0.14285714285714285,0.18181818181818182,14
