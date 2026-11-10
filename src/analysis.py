@@ -188,6 +188,28 @@ def error_analysis(tag: str, pred: pd.DataFrame) -> None:
     print(agree.to_string(index=False))
 
 
+def paired_bootstrap(a: pd.DataFrame, b: pd.DataFrame, n_boot: int = 2000, seed: int = 42) -> dict:
+    """Is model A really better than model B? Resample the SAME test posts many times and look
+    at the difference in macro-F1 / accuracy. If the 95% interval excludes 0, the gain is real."""
+    m = a.merge(b, on="id", suffixes=("_a", "_b"))
+    y, pa, pb = m["label_a"].values, m["pred_a"].values, m["pred_b"].values
+    rng = np.random.default_rng(seed)
+    d_f1, d_acc = [], []
+    for _ in range(n_boot):
+        i = rng.integers(0, len(y), len(y))
+        d_f1.append(f1_score(y[i], pa[i], average="macro") - f1_score(y[i], pb[i], average="macro"))
+        d_acc.append((pa[i] == y[i]).mean() - (pb[i] == y[i]).mean())
+    out = {"posts": len(y)}
+    for name, d, point in (
+        ("macro_f1", d_f1, f1_score(y, pa, average="macro") - f1_score(y, pb, average="macro")),
+        ("accuracy", d_acc, (pa == y).mean() - (pb == y).mean()),
+    ):
+        lo, hi = np.percentile(d, [2.5, 97.5])
+        out[f"{name}_diff"], out[f"{name}_ci_low"], out[f"{name}_ci_high"] = point, lo, hi
+        out[f"{name}_p_better"] = float((np.array(d) > 0).mean())
+    return out
+
+
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--best", default=None, help="tag to analyse (default: highest macro-F1 with predictions)")
@@ -204,6 +226,14 @@ def main(argv=None) -> None:
         print("No *_test_predictions.csv found yet. Train a model first.")
         return
     error_analysis(best, preds[best])
+    if "baseline" in preds and best != "baseline":
+        r = paired_bootstrap(preds[best], preds["baseline"])
+        r = {"model": MODEL_NAMES[best], "vs": MODEL_NAMES["baseline"], **r}
+        pd.DataFrame([r]).to_csv(TABLES_DIR / "significance_vs_baseline.csv", index=False)
+        print(f"\n=== {MODEL_NAMES[best]} vs {MODEL_NAMES['baseline']} (paired bootstrap, {r['posts']} test posts) ===")
+        for k in ("macro_f1", "accuracy"):
+            print(f"{k}: diff {r[k + '_diff']:+.3f}  95% CI [{r[k + '_ci_low']:+.3f}, {r[k + '_ci_high']:+.3f}]"
+                  f"  P(better) = {r[k + '_p_better']:.3f}")
     print("\nFiles written to", TABLES_DIR, "and", FIGURES_DIR)
 
 

@@ -1,7 +1,7 @@
 true_name,pred_name,count,share_of_errors
-Offensive,Normal,219,0.344
-Offensive,Hate speech,99,0.155
-Normal,Offensive,93,0.146
-Hate speech,Normal,86,0.135
-Hate speech,Offensive,75,0.118
-Normal,Hate speech,65,0.102
+Normal,Offensive,169,0.282
+Offensive,Normal,148,0.247
+Offensive,Hate speech,115,0.192
+Hate speech,Offensive,71,0.119
+Normal,Hate speech,55,0.092
+Hate speech,Normal,41,0.068
