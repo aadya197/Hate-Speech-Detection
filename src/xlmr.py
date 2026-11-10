@@ -84,6 +84,10 @@ def make_training_args(output_dir, eval_mode="epoch", **overrides) -> TrainingAr
         seed=42,
         dataloader_pin_memory=False,  # silences the MPS pin_memory warning
     )
+    warmup = overrides.pop("warmup_ratio", 0.0)
+    if warmup:
+        # transformers 5 renamed it: warmup_steps < 1 means a fraction of all training steps
+        kwargs["warmup_ratio" if _supported(TrainingArguments, "warmup_ratio") else "warmup_steps"] = warmup
     kwargs.update(overrides)
     strategy_key = "eval_strategy" if _supported(TrainingArguments, "eval_strategy") else "evaluation_strategy"
     kwargs[strategy_key] = eval_mode

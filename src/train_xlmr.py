@@ -62,6 +62,8 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--train_bs", type=int, default=4)
     parser.add_argument("--grad_accum", type=int, default=4)
+    parser.add_argument("--warmup_ratio", type=float, default=0.0,
+                        help="fraction of steps for learning-rate warmup (0.1 helps XLM-R)")
     parser.add_argument("--fp16", action="store_true", help="mixed precision (CUDA GPUs only)")
     parser.add_argument("--resume", action="store_true", help="resume from last checkpoint")
     parser.add_argument("--smoke", action="store_true", help="tiny run to check the pipeline")
@@ -90,6 +92,7 @@ def main() -> None:
         gradient_accumulation_steps=args.grad_accum,
         logging_steps=1 if args.smoke else 100,
         fp16=args.fp16,
+        warmup_ratio=args.warmup_ratio,
     )
     trainer = make_trainer(model, training_args, tokenizer, data["train"], data["validation"])
     trainer.add_callback(StallWatch())
