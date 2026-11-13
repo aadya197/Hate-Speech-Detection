@@ -11,6 +11,7 @@ import streamlit as st
 
 from src.config import LABEL_LIST, MODELS_DIR, SEED
 from src.explain import explain_post, load_predictor
+from src.hn_infer import load_hatenet
 
 MAX_WORDS = 60
 
@@ -26,11 +27,16 @@ st.set_page_config(page_title="Explainable Hate Speech Detection", page_icon="ðŸ
 
 @st.cache_resource(show_spinner="Loading model...")
 def get_predictor(spec):
-    return load_predictor(spec)
+    """Returns (predict, attention). attention is None for models without built-in attention."""
+    if spec.startswith("hatenet:"):
+        return load_hatenet(spec.split(":", 1)[1])
+    return load_predictor(spec), None
 
 
 def available_models():
     models = {}
+    if (MODELS_DIR / "hn_full_best.pt").exists():
+        models["HateNet (ours: BERT + BiLSTM + rationale-guided attention)"] = "hatenet:hn_full"
     if (MODELS_DIR / "bert_best").exists():
         models["BERT (fine-tuned)"] = str(MODELS_DIR / "bert_best")
     if (MODELS_DIR / "xlmr_gpu_best").exists():
@@ -64,6 +70,11 @@ if not models:
     st.stop()
 
 choice = st.selectbox("Model", list(models))
+use_attention = False
+if models[choice].startswith("hatenet:"):
+    use_attention = st.radio(
+        "Explanation", ["Built-in attention (1 pass)", "Occlusion (word-by-word, slower)"], horizontal=True
+    ).startswith("Built-in")
 
 if "text" not in st.session_state:
     st.session_state["text"] = EXAMPLES[0]
@@ -79,9 +90,12 @@ if st.button("Analyse", type="primary"):
     if not words:
         st.warning("Please type a post first.")
     else:
-        predictor = get_predictor(models[choice])
-        c, p0, scores = explain_post(predictor, words, np.random.default_rng(SEED))
+        predictor, attention = get_predictor(models[choice])
         probs = predictor([" ".join(words)])[0]
+        if use_attention and attention is not None:
+            c, p0, scores = int(probs.argmax()), float(probs.max()), attention(words)
+        else:
+            c, p0, scores = explain_post(predictor, words, np.random.default_rng(SEED))
 
         left, right = st.columns([1, 2])
         left.metric("Prediction", LABEL_LIST[c], f"{p0:.0%} confident", delta_color="off")
@@ -89,9 +103,15 @@ if st.button("Analyse", type="primary"):
 
         st.subheader("Why this prediction?")
         st.markdown(heatmap(words, scores), unsafe_allow_html=True)
-        st.caption(
-            "Red = words the model relied on: removing a word lowers the probability of the predicted "
-            "label. The darker the red, the bigger the drop."
-        )
+        if use_attention:
+            st.caption(
+                "Red = the model's attention. HateNet's attention was trained to match the words human "
+                "annotators marked, and tests show that removing these words really changes the prediction."
+            )
+        else:
+            st.caption(
+                "Red = words the model relied on: removing a word lowers the probability of the predicted "
+                "label. The darker the red, the bigger the drop."
+            )
         if len(text.split()) > MAX_WORDS:
             st.info(f"Only the first {MAX_WORDS} words were analysed.")
