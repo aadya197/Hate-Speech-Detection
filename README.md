@@ -45,11 +45,12 @@ data/processed/*.csv  (id, text, label, rationales, annotator_labels, label_name
 | **HateNet, 6 frozen BERT layers** | 3 | 0.703 | **0.693 ± 0.004** | 0.774 | 0.746 | 0.560 |
 | HateNet full | 3 | 0.695 | 0.687 ± 0.005 | 0.771 | 0.739 | 0.552 |
 | Plain BERT head (same pipeline) | 3 | 0.678 | 0.669 ± 0.010 | 0.757 | 0.724 | 0.525 |
+| XLM-R, plain head (same pipeline) | 3 | 0.699 | 0.681 ± 0.004 | n/a | n/a | n/a |
 | XLM-R (HF Trainer) | 1 | 0.693 | 0.680 | 0.773 | 0.742 | 0.524 |
 | BERT-base (HF Trainer) | 1 | 0.689 | 0.678 | 0.774 | 0.730 | 0.531 |
 | TF-IDF + LogReg | 1 | 0.669 | 0.648 | 0.727 | 0.729 | 0.486 |
 
-HateNet and plain-head rows are mean ± standard deviation over seeds 42, 1, 2; per-class F1 is the mean over seeds. BERT and XLM-R were trained once with the standard recipe, so their gap to HateNet is suggestive, not proven.
+HateNet, plain-BERT-head and XLM-R plain-head rows are mean ± standard deviation over seeds 42, 1, 2 with the same pipeline (`src/train_custom.py`); per-class F1 is the mean over seeds (not computed for XLM-R). The two HF Trainer rows (BERT, XLM-R) and the baseline are single runs. Full HateNet is only about 0.6 macro-F1 above XLM-R, which is within seed noise; the frozen variant is about 1.2 above and trains in 4.6 minutes vs 11.9 for XLM-R.
 
 ### Ablation (one change at a time, seed 42)
 
@@ -181,4 +182,4 @@ Common settings: max length 128, batch size 16, weight decay 0.01, AdamW with li
 
 ## Limitations
 
-HateXplain posts are English and from 2019-2020 Gab/Twitter, annotator agreement on Hate vs Offensive is imperfect (half of the test posts are split 2-1), and models can over-flag identity terms (for example "muslim" or "gay" in neutral posts). Seeds: three for HateNet and the plain head, one for the BERT, XLM-R and baseline references. HateNet's faithfulness was tested on one model and 300 posts. Results should not be used for real moderation without further bias evaluation.
+HateXplain posts are English and from 2019-2020 Gab/Twitter, annotator agreement on Hate vs Offensive is imperfect (half of the test posts are split 2-1), and models can over-flag identity terms (for example "muslim" or "gay" in neutral posts). Seeds: three for HateNet, the plain BERT head and XLM-R; the HF Trainer BERT/XLM-R runs and the baseline are single runs. HateNet's faithfulness was tested on one model and 300 posts. Results should not be used for real moderation without further bias evaluation.
