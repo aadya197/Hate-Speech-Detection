@@ -1,0 +1,4 @@
+method,auprc,comp,suff,posts
+attention,0.926,0.557,0.009,300
+occlusion,0.716,0.565,-0.059,300
+random,0.277,0.083,0.448,300
