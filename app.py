@@ -66,6 +66,8 @@ def available_models():
     models = {}
     if (MODELS_DIR / "hn_full_best.pt").exists():
         models["HateNet (ours)"] = "hatenet:hn_full"
+    if (MODELS_DIR / "hn_hinglish_best.pt").exists():
+        models["HateNet-Hinglish (experimental)"] = "hatenet:hn_hinglish"
     if (MODELS_DIR / "bert_best").exists():
         models["BERT (fine-tuned)"] = str(MODELS_DIR / "bert_best")
     if (MODELS_DIR / "xlmr_gpu_best").exists():
