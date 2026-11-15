@@ -10,6 +10,7 @@ Writes the same files as src.train_xlmr (<tag>_test_predictions.csv, <tag>_metri
 """
 import argparse
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -185,14 +186,14 @@ def main(argv=None):
     att_auprc = attention_plausibility(model, data["test"], device, pad)
     print(f"\nTEST macro-F1 {test_m['macro_f1']:.4f}  acc {test_m['accuracy']:.4f}  attention AUPRC {att_auprc:.3f}")
 
-    if a.extra_test:
-        et = encode(pd.read_csv(a.extra_test)[["text", "label"]], tok, a.max_len, with_rationale=False)
+    for k, path in enumerate(a.extra_test.split(",") if a.extra_test else []):
+        name = Path(path).stem
+        et = encode(pd.read_csv(path)[["text", "label"]], tok, a.max_len, with_rationale=False)
         lg, _ = predict(model, DataLoader(et, batch_size=64, collate_fn=lambda b: collate(b, pad)), device)
         lab = np.array([d["label"] for d in et])
         em = compute_metrics((lg, lab))
-        pd.DataFrame([em]).to_csv(TABLES_DIR / f"{a.tag}_extra_test_metrics.csv", index=False)
-        per_class_table(lab, lg.argmax(1)).to_csv(TABLES_DIR / f"{a.tag}_extra_test_per_class.csv", index=False)
-        print(f"EXTRA TEST ({len(et)} posts) macro-F1 {em['macro_f1']:.4f}  acc {em['accuracy']:.4f}")
+        pd.DataFrame([em]).to_csv(TABLES_DIR / f"{a.tag}_{name}_metrics.csv", index=False)
+        print(f"EXTRA TEST {name} ({len(et)} posts) macro-F1 {em['macro_f1']:.4f}  acc {em['accuracy']:.4f}")
     if a.extra_train:
         return  # keep the main ablation table clean
     path = TABLES_DIR / "ablation.csv"
