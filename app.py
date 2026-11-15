@@ -8,7 +8,10 @@ import html
 import numpy as np
 import streamlit as st
 
+import pandas as pd
+
 from src.config import LABEL_LIST, MODELS_DIR, SEED
+from src.data import consensus_mask, load_processed, parse_rationales
 from src.explain import explain_post, load_predictor
 from src.hn_infer import load_hatenet
 
@@ -24,6 +27,10 @@ EXAMPLES = [
      "Neutral sentences like this are not flagged in our identity-term check."),
     ("Known failure", "stop being so stupid, nobody likes you",
      "Annotators would call this Offensive, but HateNet says Normal. Attention and occlusion disagree here."),
+    ("Hinglish (friendly)", "yaar tum bahut achhe ho, kal milte hain",
+     "Out of domain: the model was trained on English only, so Roman-script Hindi is outside what it has seen."),
+    ("Hinglish (insult)", "tu bilkul pagal hai, chup kar ja yahan se",
+     "Out of domain: English-only training. In our test a Hinglish insult ('tu bilkul pagal hai') was called Normal with 96% confidence."),
 ]
 
 st.set_page_config(page_title="Explainable Hate Speech Detection", page_icon="🛡️", layout="centered")
@@ -68,13 +75,31 @@ def available_models():
     return models
 
 
-def heatmap(words, scores):
+@st.cache_data(show_spinner=False)
+def test_posts():
+    return load_processed("test")
+
+
+def pick_dataset_post(label_id):
+    """Load a random real test post with the given gold label (needs data/processed from src.data)."""
+    df = test_posts()
+    df = df[df["label"] == label_id]
+    r = df.iloc[int(np.random.default_rng().integers(len(df)))]
+    words = str(r["text"]).split()[:MAX_WORDS]
+    mask = consensus_mask(parse_rationales(r["rationales"]), str(r["text"]).split())[: len(words)]
+    st.session_state["text"] = " ".join(words)
+    st.session_state["gold"] = {"text": " ".join(words), "label": LABEL_LIST[label_id], "mask": [int(m) for m in mask]}
+    st.session_state["analysed"] = True
+
+
+def heatmap(words, scores, marked=None):
     top = max(float(np.max(scores)), 1e-9)
     spans = []
-    for w, s in zip(words, scores):
+    for i, (w, s) in enumerate(zip(words, scores)):
         a = max(0.0, float(s)) / top
+        extra = "font-weight:700;text-decoration:underline;" if marked is not None and marked[i] else ""
         spans.append(
-            f"<span style='background:rgba(220,50,50,{a:.2f});padding:3px 6px;border-radius:5px;'>"
+            f"<span style='background:rgba(220,50,50,{a:.2f});padding:3px 6px;border-radius:5px;{extra}'>"
             f"{html.escape(w)}</span>"
         )
     return "<div style='line-height:2.3;font-size:1.15rem'>" + " ".join(spans) + "</div>"
@@ -132,9 +157,22 @@ with st.sidebar:
         )
 
 st.markdown("##### Try an example")
-cols = st.columns(len(EXAMPLES))
-for i, (col, (title, text, _)) in enumerate(zip(cols, EXAMPLES)):
-    col.button(title, key=f"ex{i}", use_container_width=True, on_click=set_example, args=(text,))
+for row in (EXAMPLES[:3], EXAMPLES[3:]):
+    cols = st.columns(3)
+    for col, (title, text, _) in zip(cols, row):
+        col.button(title, key=f"ex_{title}", use_container_width=True, on_click=set_example, args=(text,))
+
+st.markdown("##### Real posts from the HateXplain test set")
+show_real = st.checkbox("Show real dataset examples (they can contain slurs and offensive language)")
+if show_real:
+    if (st.session_state.get("_no_data")) or not (MODELS_DIR.parent / "data" / "processed" / "hatexplain_test.csv").exists():
+        st.warning("data/processed/hatexplain_test.csv not found. Run `python -m src.data` first.")
+    else:
+        c1, c2, c3 = st.columns(3)
+        c1.button("Random Hate speech", key="real0", use_container_width=True, on_click=pick_dataset_post, args=(0,))
+        c2.button("Random Offensive", key="real2", use_container_width=True, on_click=pick_dataset_post, args=(2,))
+        c3.button("Random Normal", key="real1", use_container_width=True, on_click=pick_dataset_post, args=(1,))
+        st.caption("Underlined words in the explanation are the ones human annotators marked as the reason for their label.")
 
 if "text" not in st.session_state:
     st.session_state["text"] = ""
@@ -170,7 +208,12 @@ if st.session_state.get("analysed"):
         st.markdown(prob_bars(probs), unsafe_allow_html=True)
 
         st.subheader("Why this prediction?")
-        st.markdown(heatmap(words, scores), unsafe_allow_html=True)
+        gold = st.session_state.get("gold")
+        marked = gold["mask"] if gold and gold["text"] == text and len(gold["mask"]) == len(words) else None
+        if marked is not None:
+            ok = "✅ matches" if gold["label"] == label else "❌ differs from"
+            st.markdown(f"**Annotators' label:** {gold['label']} ({ok} the model)")
+        st.markdown(heatmap(words, scores, marked), unsafe_allow_html=True)
         order = np.argsort(-np.asarray(scores))[:3]
         top_words = [words[i].strip(".,!?;:\"'") for i in order if scores[i] > 0]
         if top_words:

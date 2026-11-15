@@ -30,7 +30,7 @@ def encode(df, tok, max_len, with_rationale=True):
         words = str(r["text"]).split() or ["."]
         enc = tok(words, is_split_into_words=True, truncation=True, max_length=max_len)
         rat = [0] * len(enc["input_ids"])
-        if with_rationale and int(r["label"]) != 1:
+        if with_rationale and int(r["label"]) != 1 and isinstance(r.get("rationales"), str):
             m = consensus_mask(parse_rationales(r["rationales"]), words)
             if len(m) == len(words):
                 rat = [int(m[w]) if w is not None else 0 for w in enc.word_ids()]
@@ -98,6 +98,8 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--fp16", action="store_true")
     p.add_argument("--smoke", action="store_true")
+    p.add_argument("--extra_train", default=None, help="CSV (text,label) of extra training posts, e.g. Hinglish")
+    p.add_argument("--extra_test", default=None, help="CSV (text,label) held-out posts evaluated separately")
     p.add_argument("--save_model", action="store_true", help="save the best weights to models/<tag>_best.pt")
     a = p.parse_args(argv)
     if a.smoke:
@@ -111,6 +113,10 @@ def main(argv=None):
     lim = 64 if a.smoke else None
     data = {s: encode(load_processed(s).head(lim) if lim else load_processed(s), tok, a.max_len)
             for s in ("train", "validation", "test")}
+    if a.extra_train:
+        ex = pd.read_csv(a.extra_train)[["text", "label"]]
+        data["train"] += encode(ex, tok, a.max_len, with_rationale=False)
+        print(f"added {len(ex)} extra training posts from {a.extra_train}")
     pad = tok.pad_token_id
     mk = lambda d, shuffle: DataLoader(d, batch_size=a.bs if shuffle else 64, shuffle=shuffle,
                                        collate_fn=lambda b: collate(b, pad))
@@ -179,6 +185,16 @@ def main(argv=None):
     att_auprc = attention_plausibility(model, data["test"], device, pad)
     print(f"\nTEST macro-F1 {test_m['macro_f1']:.4f}  acc {test_m['accuracy']:.4f}  attention AUPRC {att_auprc:.3f}")
 
+    if a.extra_test:
+        et = encode(pd.read_csv(a.extra_test)[["text", "label"]], tok, a.max_len, with_rationale=False)
+        lg, _ = predict(model, DataLoader(et, batch_size=64, collate_fn=lambda b: collate(b, pad)), device)
+        lab = np.array([d["label"] for d in et])
+        em = compute_metrics((lg, lab))
+        pd.DataFrame([em]).to_csv(TABLES_DIR / f"{a.tag}_extra_test_metrics.csv", index=False)
+        per_class_table(lab, lg.argmax(1)).to_csv(TABLES_DIR / f"{a.tag}_extra_test_per_class.csv", index=False)
+        print(f"EXTRA TEST ({len(et)} posts) macro-F1 {em['macro_f1']:.4f}  acc {em['accuracy']:.4f}")
+    if a.extra_train:
+        return  # keep the main ablation table clean
     path = TABLES_DIR / "ablation.csv"
     old = pd.read_csv(path) if path.exists() else pd.DataFrame()
     if len(old):
