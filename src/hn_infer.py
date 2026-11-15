@@ -14,7 +14,8 @@ def load_hatenet(tag="hn_full", device=None):
     ck = torch.load(MODELS_DIR / f"{tag}_best.pt", map_location="cpu")
     a = ck["args"]
     model = HateNet(a["encoder"], a["head"], rationale_lambda=a["rationale_lambda"])
-    model.load_state_dict(ck["state"])
+    state = {k: v for k, v in ck["state"].items() if k != "class_weights"}  # training-only loss weights
+    model.load_state_dict(state)
     model.to(device).eval()
     tok = AutoTokenizer.from_pretrained(a["encoder"])
 

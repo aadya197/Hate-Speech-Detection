@@ -182,7 +182,10 @@ text = st.text_area("Post", key="text", height=100, placeholder="Type or paste a
 st.button("Analyse", type="primary", on_click=start_analysis)
 
 note = next((n for _, t, n in EXAMPLES if t == text), None)
-if note:
+if "Hinglish" in choice:
+    st.caption("ℹ️ HateNet-Hinglish: experimental model trained on HateXplain plus Hinglish data with binary, noisy "
+               "labels (hate was mapped to Offensive). Scores are from a single seed.")
+elif note:
     st.caption(f"ℹ️ {note}")
 
 if st.session_state.get("analysed"):
