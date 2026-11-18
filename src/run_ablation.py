@@ -1,9 +1,4 @@
-"""Run the whole ablation study, one run after another (skips runs that are already in ablation.csv).
 
-    python -m src.run_ablation --stage design     # 5 runs, about 1 hour on a Colab T4
-    python -m src.run_ablation --stage seeds      # 4 extra runs (2 more seeds of cls and full)
-    python -m src.run_ablation --stage design --dry   # just print the commands
-"""
 import argparse
 import subprocess
 import sys
